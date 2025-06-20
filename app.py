@@ -3,6 +3,7 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import urllib.parse
+from datetime import date
 
 # --- CONFIGURACIÓN DE GOOGLE SHEETS ---
 SHEET_ID = "1kBLQAdhYbnP8HTUgpr_rmmGEaOdyMU2tI97ogegrGxY"
@@ -29,7 +30,7 @@ def autenticar(usuario, contraseña):
         (credenciales["Usuario"] == usuario) & (credenciales["Password"] == contraseña)
     ].empty
 
-def generar_tabla_html(df):
+def generar_tabla_html(df, basico, fecha):
     html = "<table style='width:100%; border-collapse: collapse;'>"
     html += "<thead><tr style='background-color:#f0f0f0;'>"
     for col in ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]:
@@ -37,7 +38,7 @@ def generar_tabla_html(df):
     html += "</tr></thead><tbody>"
 
     for _, row in df.iterrows():
-        asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']})")
+        asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']}) ({basico}) ({fecha.strftime('%d/%m/%Y')})")
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
             correos += f",{row['Correo Personal']}"
@@ -56,7 +57,6 @@ def generar_tabla_html(df):
 # --- ESTADO DE SESIÓN ---
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
-
 if "forzar_rerun" not in st.session_state:
     st.session_state["forzar_rerun"] = False
 
@@ -77,6 +77,12 @@ st.title("📋 Guías - Incorporaciones de Pasajeros")
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
+
+    # --- Selección de Básico y Fecha ---
+    basicos = ["PARÍS", "ROMA", "MADRID", "LONDRES", "BERLÍN", "VIENA"]  # Personalizable
+    basico = st.selectbox("Selecciona el Básico del viaje", basicos)
+    fecha = st.date_input("Selecciona la Fecha del Viaje", value=date.today(), format="DD/MM/YYYY")
+
     df = cargar_datos()
 
     if df.empty:
@@ -88,8 +94,11 @@ if pagina == "📄 Visualización":
         if ciudad_seleccionada != "TODAS":
             df = df[df["Ciudad"] == ciudad_seleccionada]
 
-        html_tabla = generar_tabla_html(df)
-        st.markdown(html_tabla, unsafe_allow_html=True)
+        if not basico or not fecha:
+            st.warning("Selecciona un Básico y una Fecha para mostrar la tabla de contactos.")
+        else:
+            html_tabla = generar_tabla_html(df, basico, fecha)
+            st.markdown(html_tabla, unsafe_allow_html=True)
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
