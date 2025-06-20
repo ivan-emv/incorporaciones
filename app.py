@@ -39,7 +39,7 @@ def cargar_basicos():
 def cargar_ciudades():
     try:
         ciudades_df = gc.open_by_key(SHEET_ID).worksheet("Ciudades").get_all_records()
-        return sorted([row["Ciudad"] for row in ciudades_df if row["Ciudad"]])
+        return sorted([row["Ciudades"] for row in ciudades_df if row["Ciudades"]])
     except:
         return []
 
