@@ -72,8 +72,6 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
 # --- ESTADO DE SESIÓN ---
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
-if "trigger_rerun" not in st.session_state:
-    st.session_state["trigger_rerun"] = False
 
 # --- NAVEGACIÓN ---
 pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
@@ -81,11 +79,6 @@ pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "�
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
-
-# --- REEJECUTAR DESPUÉS DE LOGIN SI ES NECESARIO ---
-if st.session_state.get("trigger_rerun"):
-    st.session_state["trigger_rerun"] = False
-    st.experimental_rerun()
 
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
@@ -111,7 +104,7 @@ if pagina == "📄 Visualización":
 
             bus_texto = ""
             if bus_input:
-                if any(sep in bus_input for sep in [",", "y", "/", " "]):
+                if any(sep in bus_input for sep in [",", "y", "/", ""]):
                     bus_texto = f"Buses {bus_input}"
                 else:
                     bus_texto = f"Bus {bus_input}"
@@ -132,14 +125,14 @@ elif pagina == "🛠️ Administración":
         if submitted:
             if autenticar(usuario, password):
                 st.session_state["login_autorizado"] = True
-                st.session_state["trigger_rerun"] = True
+                st.success("Acceso concedido. Continúa con las funciones administrativas.")
             else:
                 st.error("Credenciales incorrectas.")
 
     if st.session_state.get("login_autorizado"):
         if st.button("🔒 Cerrar sesión"):
             st.session_state["login_autorizado"] = False
-            st.experimental_rerun()
+            st.success("Sesión cerrada correctamente.")
 
         df = cargar_datos()
 
@@ -194,10 +187,8 @@ elif pagina == "🛠️ Administración":
                     df.at[selected_row, "Correo Personal"] = correo_personal_e
                     guardar_datos(df)
                     st.success("Registro actualizado.")
-                    df = cargar_datos()
             with col2:
                 if st.button("🗑️ Eliminar Registro"):
                     df = df.drop(index=selected_row).reset_index(drop=True)
                     guardar_datos(df)
                     st.warning("Registro eliminado.")
-                    df = cargar_datos()
