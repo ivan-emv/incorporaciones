@@ -50,15 +50,27 @@ if pagina == "📄 Visualización":
         if ciudad_seleccionada != "TODAS":
             df = df[df["Ciudad"] == ciudad_seleccionada]
 
-        # Crear columna de enlace mailto con asunto codificado
-        df["📧 Enviar Correo"] = df.apply(lambda row: (
-            f"[Enviar correo](mailto:{row['Correo EMV']},{row['Correo Personal']}?subject="
-            f"{urllib.parse.quote(f'Incorporaciones ({row['Ciudad']})')})"
-        ), axis=1)
+        # Visualización como tarjetas con botón de envío de correo funcional
+        st.markdown("### 📬 Contactar a los Guías")
+        for idx, row in df.iterrows():
+            correo_link = f"mailto:{row['Correo EMV']}"
+            if row['Correo Personal']:
+                correo_link += f",{row['Correo Personal']}"
+            asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']})")
+            link = f"[📧 Enviar correo]({correo_link}?subject={asunto})"
 
-        # Reordenar columnas
-        columnas = ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]
-        st.dataframe(df[columnas], use_container_width=True)
+            st.markdown(
+                f"""
+                <div style='border:1px solid #CCC; border-radius:10px; padding:10px; margin-bottom:10px'>
+                    <strong>Ciudad:</strong> {row['Ciudad']}  | 
+                    <strong>Guía:</strong> {row['Nombre de Guía']}  | 
+                    <strong>Correo EMV:</strong> {row['Correo EMV']}  | 
+                    <strong>Correo Personal:</strong> {row['Correo Personal'] or '-'}  | 
+                    {link}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
