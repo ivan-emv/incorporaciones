@@ -53,6 +53,10 @@ def generar_tabla_html(df):
     html += "</tbody></table>"
     return html
 
+# --- ESTADO DE SESIÓN ---
+if "login_autorizado" not in st.session_state:
+    st.session_state["login_autorizado"] = False
+
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
@@ -79,13 +83,26 @@ if pagina == "📄 Visualización":
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
     st.subheader("Acceso de Administrador")
-    with st.form("login_form"):
-        usuario = st.text_input("Usuario")
-        password = st.text_input("Contraseña", type="password")
-        submitted = st.form_submit_button("Ingresar")
 
-    if submitted and autenticar(usuario, password):
-        st.success("Acceso concedido.")
+    # LOGIN
+    if not st.session_state["login_autorizado"]:
+        with st.form("login_form"):
+            usuario = st.text_input("Usuario")
+            password = st.text_input("Contraseña", type="password")
+            submitted = st.form_submit_button("Ingresar")
+
+        if submitted and autenticar(usuario, password):
+            st.session_state["login_autorizado"] = True
+            st.experimental_rerun()
+        elif submitted:
+            st.error("Credenciales incorrectas.")
+
+    # SI LOGIN AUTORIZADO
+    if st.session_state["login_autorizado"]:
+        if st.button("🔒 Cerrar sesión"):
+            st.session_state["login_autorizado"] = False
+            st.experimental_rerun()
+
         df = cargar_datos()
 
         st.markdown("### ➕ Agregar nuevo registro")
@@ -109,7 +126,12 @@ elif pagina == "🛠️ Administración":
             st.experimental_rerun()
 
         st.markdown("### ✏️ Editar o eliminar registros")
-        selected_row = st.selectbox("Selecciona una fila para editar o eliminar", df.index, format_func=lambda i: f"{df.loc[i, 'Ciudad']} - {df.loc[i, 'Nombre de Guía']}")
+        selected_row = st.selectbox(
+            "Selecciona una fila para editar o eliminar",
+            df.index,
+            format_func=lambda i: f"{df.loc[i, 'Ciudad']} - {df.loc[i, 'Nombre de Guía']}"
+        )
+
         if selected_row is not None:
             row = df.loc[selected_row]
             ciudad_e = st.text_input("Ciudad", value=row["Ciudad"], key="edit_ciudad")
@@ -133,6 +155,3 @@ elif pagina == "🛠️ Administración":
                     guardar_datos(df)
                     st.warning("Registro eliminado.")
                     st.experimental_rerun()
-
-    elif submitted:
-        st.error("Credenciales incorrectas.")
