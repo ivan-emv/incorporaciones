@@ -3,7 +3,6 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 import urllib.parse
-from datetime import date
 
 # --- CONFIGURACIÓN DE GOOGLE SHEETS ---
 SHEET_ID = "1kBLQAdhYbnP8HTUgpr_rmmGEaOdyMU2tI97ogegrGxY"
@@ -30,7 +29,14 @@ def autenticar(usuario, contraseña):
         (credenciales["Usuario"] == usuario) & (credenciales["Password"] == contraseña)
     ].empty
 
-def generar_tabla_html(df, basico, fecha):
+def cargar_basicos():
+    try:
+        basicos_df = gc.open_by_key(SHEET_ID).worksheet("Basicos").get_all_records()
+        return sorted([row["Básicos"] for row in basicos_df if row["Básicos"]])
+    except:
+        return []
+
+def generar_tabla_html(df, basico, fecha_texto, bus):
     html = "<table style='width:100%; border-collapse: collapse;'>"
     html += "<thead><tr style='background-color:#f0f0f0;'>"
     for col in ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]:
@@ -38,11 +44,12 @@ def generar_tabla_html(df, basico, fecha):
     html += "</tr></thead><tbody>"
 
     for _, row in df.iterrows():
-        asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']}) ({basico}) ({fecha.strftime('%d/%m/%Y')})")
+        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}"
+        asunto_encoded = urllib.parse.quote(asunto)
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
             correos += f",{row['Correo Personal']}"
-        link = f"<a href='mailto:{correos}?subject={asunto}'>📧 Enviar</a>"
+        link = f"<a href='mailto:{correos}?subject={asunto_encoded}'>📧 Enviar</a>"
 
         html += "<tr>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Ciudad']}</td>"
@@ -78,27 +85,30 @@ st.title("📋 Guías - Incorporaciones de Pasajeros")
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
 
-    # --- Selección de Básico y Fecha ---
-    basicos = ["SCPRABU", "SCESTE", "GMESTE", "MIESTE"]  # Personalizable
-    basico = st.selectbox("Selecciona el Básico del viaje", basicos)
-    fecha = st.date_input("Selecciona la Fecha del Viaje", value=date.today(), format="DD/MM/YYYY")
-
-    df = cargar_datos()
-
-    if df.empty:
-        st.warning("No hay datos disponibles.")
+    # --- Cargar básicos desde la hoja "Basicos" ---
+    basicos = cargar_basicos()
+    if not basicos:
+        st.error("No se pudieron cargar los Básicos desde la hoja 'Basicos'.")
     else:
-        ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
-        ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
+        basico = st.selectbox("Selecciona el Básico del viaje", basicos)
+        fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
+        bus = st.text_input("Bus (Ejemplo: Bus 1)")
 
-        if ciudad_seleccionada != "TODAS":
-            df = df[df["Ciudad"] == ciudad_seleccionada]
-
-        if not basico or not fecha:
-            st.warning("Selecciona un Básico y una Fecha para mostrar la tabla de contactos.")
+        if not fecha_texto or not bus:
+            st.warning("Completa todos los campos para visualizar la tabla.")
         else:
-            html_tabla = generar_tabla_html(df, basico, fecha)
-            st.markdown(html_tabla, unsafe_allow_html=True)
+            df = cargar_datos()
+            if df.empty:
+                st.warning("No hay datos disponibles.")
+            else:
+                ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
+                ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
+
+                if ciudad_seleccionada != "TODAS":
+                    df = df[df["Ciudad"] == ciudad_seleccionada]
+
+                html_tabla = generar_tabla_html(df, basico, fecha_texto, bus)
+                st.markdown(html_tabla, unsafe_allow_html=True)
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
