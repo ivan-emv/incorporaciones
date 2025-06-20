@@ -36,6 +36,10 @@ def cargar_basicos():
     except:
         return []
 
+def cargar_ciudades():
+    df = cargar_datos()
+    return sorted(df["Ciudad"].dropna().unique())
+
 def generar_tabla_html(df, basico, fecha_texto, bus):
     html = "<table style='width:100%; border-collapse: collapse;'>"
     html += "<thead><tr style='background-color:#f0f0f0;'>"
@@ -131,22 +135,26 @@ elif pagina == "🛠️ Administración":
 
         st.markdown("### ➕ Agregar nuevo registro")
         with st.form("add_form"):
-            ciudad = st.text_input("Ciudad")
+            ciudades_disponibles = cargar_ciudades()
+            ciudades_seleccionadas = st.multiselect("Selecciona Ciudad(es)", ciudades_disponibles)
             guia = st.text_input("Nombre de Guía")
             correo_emv = st.text_input("Correo EMV")
             correo_personal = st.text_input("Correo Personal")
             agregar = st.form_submit_button("Guardar")
 
-        if agregar:
-            nuevo_registro = pd.DataFrame([{
-                "Ciudad": ciudad,
-                "Nombre de Guía": guia,
-                "Correo EMV": correo_emv,
-                "Correo Personal": correo_personal
-            }])
-            df = pd.concat([df, nuevo_registro], ignore_index=True)
+        if agregar and ciudades_seleccionadas:
+            nuevos_registros = pd.DataFrame([
+                {
+                    "Ciudad": ciudad,
+                    "Nombre de Guía": guia,
+                    "Correo EMV": correo_emv,
+                    "Correo Personal": correo_personal
+                }
+                for ciudad in ciudades_seleccionadas
+            ])
+            df = pd.concat([df, nuevos_registros], ignore_index=True)
             guardar_datos(df)
-            st.success("Registro agregado correctamente.")
+            st.success("Registro(s) agregado(s) correctamente.")
             st.session_state["forzar_rerun"] = True
 
         st.markdown("### ✏️ Editar o eliminar registros")
