@@ -82,6 +82,11 @@ pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "�
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
 
+# --- REEJECUTAR DESPUÉS DE LOGIN SI ES NECESARIO ---
+if st.session_state.get("trigger_rerun"):
+    st.session_state["trigger_rerun"] = False
+    st.experimental_rerun()
+
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
@@ -118,7 +123,7 @@ if pagina == "📄 Visualización":
 elif pagina == "🛠️ Administración":
     st.subheader("Acceso de Administrador")
 
-    if not st.session_state["login_autorizado"] and not st.session_state["trigger_rerun"]:
+    if not st.session_state["login_autorizado"]:
         with st.form("login_form"):
             usuario = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
@@ -128,17 +133,10 @@ elif pagina == "🛠️ Administración":
             if autenticar(usuario, password):
                 st.session_state["login_autorizado"] = True
                 st.session_state["trigger_rerun"] = True
-        else:
-            st.error("Credenciales incorrectas.")
-
-# Este rerun ocurre luego del formulario y solo si está marcado el trigger
-if st.session_state.get("trigger_rerun"):
-    st.session_state["trigger_rerun"] = False
-    st.experimental_rerun()
+            else:
+                st.error("Credenciales incorrectas.")
 
     if st.session_state.get("login_autorizado"):
-        st.session_state["trigger_rerun"] = False
-
         if st.button("🔒 Cerrar sesión"):
             st.session_state["login_autorizado"] = False
             st.experimental_rerun()
