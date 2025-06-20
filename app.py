@@ -29,6 +29,30 @@ def autenticar(usuario, contraseña):
         (credenciales["Usuario"] == usuario) & (credenciales["Password"] == contraseña)
     ].empty
 
+def generar_tabla_html(df):
+    html = "<table style='width:100%; border-collapse: collapse;'>"
+    html += "<thead><tr style='background-color:#f0f0f0;'>"
+    for col in ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]:
+        html += f"<th style='border:1px solid #ddd; padding:8px;'>{col}</th>"
+    html += "</tr></thead><tbody>"
+
+    for _, row in df.iterrows():
+        asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']})")
+        correos = row["Correo EMV"]
+        if row["Correo Personal"]:
+            correos += f",{row['Correo Personal']}"
+        link = f"<a href='mailto:{correos}?subject={asunto}'>📧 Enviar</a>"
+
+        html += "<tr>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Ciudad']}</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Nombre de Guía']}</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo EMV']}</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo Personal'] or '-'}</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{link}</td>"
+        html += "</tr>"
+    html += "</tbody></table>"
+    return html
+
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
@@ -43,34 +67,14 @@ if pagina == "📄 Visualización":
     if df.empty:
         st.warning("No hay datos disponibles.")
     else:
-        # Filtro por ciudad
         ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
         ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
 
         if ciudad_seleccionada != "TODAS":
             df = df[df["Ciudad"] == ciudad_seleccionada]
 
-        # Visualización como tarjetas con botón de envío de correo funcional
-        st.markdown("### 📬 Contactar a los Guías")
-        for idx, row in df.iterrows():
-            correo_link = f"mailto:{row['Correo EMV']}"
-            if row['Correo Personal']:
-                correo_link += f",{row['Correo Personal']}"
-            asunto = urllib.parse.quote(f"Incorporaciones ({row['Ciudad']})")
-            link = f"[📧 Enviar correo]({correo_link}?subject={asunto})"
-
-            st.markdown(
-                f"""
-                <div style='border:1px solid #CCC; border-radius:10px; padding:10px; margin-bottom:10px'>
-                    <strong>Ciudad:</strong> {row['Ciudad']}  | 
-                    <strong>Guía:</strong> {row['Nombre de Guía']}  | 
-                    <strong>Correo EMV:</strong> {row['Correo EMV']}  | 
-                    <strong>Correo Personal:</strong> {row['Correo Personal'] or '-'}  | 
-                    {link}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        html_tabla = generar_tabla_html(df)
+        st.markdown(html_tabla, unsafe_allow_html=True)
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
@@ -84,7 +88,6 @@ elif pagina == "🛠️ Administración":
         st.success("Acceso concedido.")
         df = cargar_datos()
 
-        # --- FORMULARIO DE NUEVO REGISTRO ---
         st.markdown("### ➕ Agregar nuevo registro")
         with st.form("add_form"):
             ciudad = st.text_input("Ciudad")
@@ -105,7 +108,6 @@ elif pagina == "🛠️ Administración":
             st.success("Registro agregado correctamente.")
             st.experimental_rerun()
 
-        # --- EDICIÓN Y ELIMINACIÓN ---
         st.markdown("### ✏️ Editar o eliminar registros")
         selected_row = st.selectbox("Selecciona una fila para editar o eliminar", df.index, format_func=lambda i: f"{df.loc[i, 'Ciudad']} - {df.loc[i, 'Nombre de Guía']}")
         if selected_row is not None:
