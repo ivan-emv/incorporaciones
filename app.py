@@ -51,7 +51,7 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
     html += "</tr></thead><tbody>"
 
     for _, row in df.iterrows():
-        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - Bus {bus}".strip()
+        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}".strip()
         asunto_encoded = urllib.parse.quote(asunto)
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
@@ -100,9 +100,15 @@ if pagina == "📄 Visualización":
         else:
             basico = st.selectbox("Selecciona el Básico del viaje", basicos)
             fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
-            bus = st.text_input("Bus (Ejemplo: 1 o 1 y 2)")
+            bus_input = st.text_input("Bus (Ejemplo: 1 o 1 y 2)")
 
-            bus_texto = f"Buses {bus}" if any(sep in bus for sep in [",", "y", "/", " "]) else f"Bus {bus}"
+            bus_texto = ""
+            if bus_input:
+                if any(sep in bus_input for sep in [",", "y", "/", " "]):
+                    bus_texto = f"Buses {bus_input}"
+                else:
+                    bus_texto = f"Bus {bus_input}"
+
             html_tabla = generar_tabla_html(df, basico, fecha_texto, bus_texto)
             st.markdown(html_tabla, unsafe_allow_html=True)
 
