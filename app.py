@@ -72,6 +72,8 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
 # --- ESTADO DE SESIÓN ---
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
+if "trigger_rerun" not in st.session_state:
+    st.session_state["trigger_rerun"] = False
 
 # --- NAVEGACIÓN ---
 pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
@@ -116,19 +118,23 @@ if pagina == "📄 Visualización":
 elif pagina == "🛠️ Administración":
     st.subheader("Acceso de Administrador")
 
-    if not st.session_state["login_autorizado"]:
+    if not st.session_state["login_autorizado"] and not st.session_state["trigger_rerun"]:
         with st.form("login_form"):
             usuario = st.text_input("Usuario")
             password = st.text_input("Contraseña", type="password")
             submitted = st.form_submit_button("Ingresar")
 
-        if submitted and autenticar(usuario, password):
-            st.session_state["login_autorizado"] = True
-            st.experimental_rerun()
-        elif submitted:
-            st.error("Credenciales incorrectas.")
+        if submitted:
+            if autenticar(usuario, password):
+                st.session_state["login_autorizado"] = True
+                st.session_state["trigger_rerun"] = True
+                st.experimental_rerun()
+            else:
+                st.error("Credenciales incorrectas.")
 
-    if st.session_state["login_autorizado"]:
+    if st.session_state.get("login_autorizado"):
+        st.session_state["trigger_rerun"] = False
+
         if st.button("🔒 Cerrar sesión"):
             st.session_state["login_autorizado"] = False
             st.experimental_rerun()
