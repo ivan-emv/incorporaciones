@@ -37,8 +37,11 @@ def cargar_basicos():
         return []
 
 def cargar_ciudades():
-    df = cargar_datos()
-    return sorted(df["Ciudad"].dropna().unique())
+    try:
+        ciudades_df = gc.open_by_key(SHEET_ID).worksheet("Ciudades").get_all_records()
+        return sorted([row["Ciudad"] for row in ciudades_df if row["Ciudad"]])
+    except:
+        return []
 
 def generar_tabla_html(df, basico, fecha_texto, bus):
     html = "<table style='width:100%; border-collapse: collapse;'>"
