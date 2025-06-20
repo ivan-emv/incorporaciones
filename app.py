@@ -44,7 +44,7 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
     html += "</tr></thead><tbody>"
 
     for _, row in df.iterrows():
-        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}"
+        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}".strip()
         asunto_encoded = urllib.parse.quote(asunto)
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
