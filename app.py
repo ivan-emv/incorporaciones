@@ -56,10 +56,8 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
             correos += f",{row['Correo Personal']}"
-        cuerpo = f"Buenas Tardes {row['Nombre de Guía']},\n\nTe escribo para solicitarte Punto y Hora de Encuentro para los PAX del {basico} del {fecha_texto} {bus} que se incorporan en {row['Ciudad']}.\n\n"
-        cuerpo_encoded = urllib.parse.quote(cuerpo)
-        link = f"<a href='mailto:{correos}?subject={asunto_encoded}&body={cuerpo_encoded}'>📧 Enviar</a>"
 
+        link = f"<a href='mailto:{correos}?subject={asunto_encoded}'>📧 Enviar</a>"
         html += "<tr>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Ciudad']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Nombre de Guía']}</td>"
@@ -68,6 +66,10 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo Personal'] or '-'}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{link}</td>"
         html += "</tr>"
+
+        cuerpo_mensaje = f"Buenas Tardes {row['Nombre de Guía']},\n\nTe escribo para solicitarte Punto y Hora de Encuentro para los PAX del {basico} del {fecha_texto} {bus} que se incorporan en {row['Ciudad']}.\n\n"
+        st.text_area(f"Mensaje sugerido para {row['Nombre de Guía']} ({row['Ciudad']})", value=cuerpo_mensaje, height=150)
+
     html += "</tbody></table>"
     return html
 
