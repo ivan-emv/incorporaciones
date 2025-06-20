@@ -53,11 +53,6 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
     for _, row in df.iterrows():
         asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}".strip()
         asunto_encoded = urllib.parse.quote(asunto)
-        
-        cuerpo = f"Buenas Tardes {row['Nombre de Guía']},\n\n"
-        cuerpo += f"Te escribo para solicitarte Punto y Hora de Encuentro para los PAX del {basico} del {fecha_texto} {bus} que se incorporan en {row['Ciudad']}."
-        cuerpo_encoded = urllib.parse.quote(cuerpo)
-        
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
             correos += f",{row['Correo Personal']}"
