@@ -60,16 +60,19 @@ if "login_autorizado" not in st.session_state:
 if "forzar_rerun" not in st.session_state:
     st.session_state["forzar_rerun"] = False
 
+# --- NAVEGACIÓN ---
+pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
+st.session_state["pagina_actual"] = pagina
+
 # --- REINICIO SEGURO TRAS OPERACIÓN ---
 if st.session_state["forzar_rerun"]:
     st.session_state["forzar_rerun"] = False
-    st.experimental_rerun()
+    if st.session_state.get("pagina_actual") == "🛠️ Administración":
+        st.experimental_rerun()
 
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
-
-pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
 
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
