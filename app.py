@@ -125,12 +125,16 @@ elif pagina == "🛠️ Administración":
             submitted = st.form_submit_button("Ingresar")
 
         if submitted:
-            if autenticar(usuario, password):
-                st.session_state["login_autorizado"] = True
-                st.session_state["trigger_rerun"] = True
-                st.experimental_rerun()
-            else:
-                st.error("Credenciales incorrectas.")
+    if autenticar(usuario, password):
+        st.session_state["login_autorizado"] = True
+        st.session_state["trigger_rerun"] = True
+    else:
+        st.error("Credenciales incorrectas.")
+
+# Este rerun ocurre luego del formulario y solo si está marcado el trigger
+if st.session_state.get("trigger_rerun"):
+    st.session_state["trigger_rerun"] = False
+    st.experimental_rerun()
 
     if st.session_state.get("login_autorizado"):
         st.session_state["trigger_rerun"] = False
