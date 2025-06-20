@@ -56,16 +56,14 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
             correos += f",{row['Correo Personal']}"
-        cuerpo = f"Buenas Tardes {row['Nombre de Guía']},\n\nTe escribo para solicitarte Punto y Hora de Encuentro para los PAX del {basico} del {fecha_texto} {bus} que se incorporan en {row['Ciudad']}.\n\n"
-        cuerpo_encoded = urllib.parse.quote(cuerpo)
-        link = f"<a href='mailto:{correos}?subject={asunto_encoded}&body={cuerpo_encoded}'>📧 Enviar</a>"
+        link = f"<a href='mailto:{correos}?subject={asunto_encoded}'>📧 Enviar</a>"
 
         html += "<tr>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Ciudad']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Nombre de Guía']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Apellido']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo EMV']}</td>"
-        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo Personal'] or '-'}"</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo Personal'] or '-'}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{link}</td>"
         html += "</tr>"
     html += "</tbody></table>"
@@ -74,6 +72,8 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
 # --- ESTADO DE SESIÓN ---
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
+if "trigger_rerun" not in st.session_state:
+    st.session_state["trigger_rerun"] = False
 
 # --- NAVEGACIÓN ---
 pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
@@ -81,6 +81,11 @@ pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "�
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
+
+# --- REEJECUTAR DESPUÉS DE LOGIN SI ES NECESARIO ---
+if st.session_state.get("trigger_rerun"):
+    st.session_state["trigger_rerun"] = False
+    st.experimental_rerun()
 
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
@@ -127,8 +132,7 @@ elif pagina == "🛠️ Administración":
         if submitted:
             if autenticar(usuario, password):
                 st.session_state["login_autorizado"] = True
-                st.success("Autenticación exitosa. Continúa con la gestión.")
-                st.stop()
+                st.session_state["trigger_rerun"] = True
             else:
                 st.error("Credenciales incorrectas.")
 
