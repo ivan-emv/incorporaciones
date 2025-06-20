@@ -71,18 +71,9 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
 # --- ESTADO DE SESIÓN ---
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
-if "forzar_rerun" not in st.session_state:
-    st.session_state["forzar_rerun"] = False
 
 # --- NAVEGACIÓN ---
 pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
-st.session_state["pagina_actual"] = pagina
-
-# --- REINICIO SEGURO TRAS OPERACIÓN ---
-if st.session_state["forzar_rerun"]:
-    st.session_state["forzar_rerun"] = False
-    if st.session_state.get("pagina_actual") == "🛠️ Administración":
-        st.experimental_rerun()
 
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
@@ -125,7 +116,7 @@ elif pagina == "🛠️ Administración":
 
         if submitted and autenticar(usuario, password):
             st.session_state["login_autorizado"] = True
-            st.session_state["forzar_rerun"] = True
+            st.experimental_rerun()
         elif submitted:
             st.error("Credenciales incorrectas.")
 
@@ -158,7 +149,7 @@ elif pagina == "🛠️ Administración":
             df = pd.concat([df, nuevos_registros], ignore_index=True)
             guardar_datos(df)
             st.success("Registro(s) agregado(s) correctamente.")
-            st.session_state["forzar_rerun"] = True
+            df = cargar_datos()  # Actualización inmediata
 
         st.markdown("### ✏️ Editar o eliminar registros")
         selected_row = st.selectbox(
@@ -183,10 +174,10 @@ elif pagina == "🛠️ Administración":
                     df.at[selected_row, "Correo Personal"] = correo_personal_e
                     guardar_datos(df)
                     st.success("Registro actualizado.")
-                    st.session_state["forzar_rerun"] = True
+                    df = cargar_datos()
             with col2:
                 if st.button("🗑️ Eliminar Registro"):
                     df = df.drop(index=selected_row).reset_index(drop=True)
                     guardar_datos(df)
                     st.warning("Registro eliminado.")
-                    st.session_state["forzar_rerun"] = True
+                    df = cargar_datos()
