@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+import urllib.parse
 
 # --- CONFIGURACIÓN DE GOOGLE SHEETS ---
 SHEET_ID = "1kBLQAdhYbnP8HTUgpr_rmmGEaOdyMU2tI97ogegrGxY"
@@ -21,11 +22,6 @@ def guardar_datos(df):
     worksheet.clear()
     worksheet.update([df.columns.values.tolist()] + df.values.tolist())
 
-def enviar_correo(ciudad, correo_emv, correo_personal):
-    asunto = f"Incorporaciones ({ciudad})"
-    return f"mailto:{correo_emv},{correo_personal}?subject={asunto}"
-
-# --- LOGIN ADMINISTRADOR ---
 def autenticar(usuario, contraseña):
     admin_df = gc.open_by_key(SHEET_ID).worksheet("ADMIN").get_all_records()
     credenciales = pd.DataFrame(admin_df)
@@ -33,31 +29,36 @@ def autenticar(usuario, contraseña):
         (credenciales["Usuario"] == usuario) & (credenciales["Password"] == contraseña)
     ].empty
 
-# --- INTERFAZ ---
+# --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
 
-# --- SELECCIÓN DE PÁGINA ---
 pagina = st.sidebar.radio("Selecciona una opción:", ["📄 Visualización", "🛠️ Administración"])
 
 # --- VISUALIZACIÓN PÚBLICA ---
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
-    if st.button("🔄 Actualizar Datos"):
-        df = cargar_datos()
-        st.success("Datos actualizados correctamente.")
-    else:
-        df = cargar_datos()
+    df = cargar_datos()
 
     if df.empty:
         st.warning("No hay datos disponibles.")
     else:
-        for i, row in df.iterrows():
-            with st.expander(f"{row['Ciudad']} - {row['Nombre de Guía']}"):
-                st.markdown(f"**Correo EMV:** {row['Correo EMV']}")
-                st.markdown(f"**Correo Personal:** {row['Correo Personal']}")
-                mailto_link = enviar_correo(row['Ciudad'], row['Correo EMV'], row['Correo Personal'])
-                st.markdown(f"[📧 Enviar correo]({mailto_link})")
+        # Filtro por ciudad
+        ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
+        ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
+
+        if ciudad_seleccionada != "TODAS":
+            df = df[df["Ciudad"] == ciudad_seleccionada]
+
+        # Crear columna de enlace mailto con asunto codificado
+        df["📧 Enviar Correo"] = df.apply(lambda row: (
+            f"[Enviar correo](mailto:{row['Correo EMV']},{row['Correo Personal']}?subject="
+            f"{urllib.parse.quote(f'Incorporaciones ({row['Ciudad']})')})"
+        ), axis=1)
+
+        # Reordenar columnas
+        columnas = ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]
+        st.dataframe(df[columnas], use_container_width=True)
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
@@ -90,10 +91,11 @@ elif pagina == "🛠️ Administración":
             df = pd.concat([df, nuevo_registro], ignore_index=True)
             guardar_datos(df)
             st.success("Registro agregado correctamente.")
+            st.experimental_rerun()
 
         # --- EDICIÓN Y ELIMINACIÓN ---
         st.markdown("### ✏️ Editar o eliminar registros")
-        selected_row = st.selectbox("Selecciona una fila para editar o eliminar", df.index)
+        selected_row = st.selectbox("Selecciona una fila para editar o eliminar", df.index, format_func=lambda i: f"{df.loc[i, 'Ciudad']} - {df.loc[i, 'Nombre de Guía']}")
         if selected_row is not None:
             row = df.loc[selected_row]
             ciudad_e = st.text_input("Ciudad", value=row["Ciudad"], key="edit_ciudad")
@@ -110,12 +112,13 @@ elif pagina == "🛠️ Administración":
                     df.at[selected_row, "Correo Personal"] = correo_personal_e
                     guardar_datos(df)
                     st.success("Registro actualizado.")
+                    st.experimental_rerun()
             with col2:
                 if st.button("🗑️ Eliminar Registro"):
                     df = df.drop(index=selected_row).reset_index(drop=True)
                     guardar_datos(df)
                     st.warning("Registro eliminado.")
+                    st.experimental_rerun()
 
     elif submitted:
         st.error("Credenciales incorrectas.")
-
