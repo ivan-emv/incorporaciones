@@ -129,12 +129,13 @@ elif pagina == "🛠️ Administración":
             password = st.text_input("Contraseña", type="password")
             submitted = st.form_submit_button("Ingresar")
 
-        if submitted:
-            if autenticar(usuario, password):
-                st.session_state["login_autorizado"] = True
-                st.session_state["trigger_rerun"] = True
-            else:
-                st.error("Credenciales incorrectas.")
+    if submitted:
+        if autenticar(usuario, password):
+            st.session_state["login_autorizado"] = True
+            st.success("Autenticación exitosa. Recargando la aplicación...")
+            st.experimental_rerun()
+        else:
+            st.error("Credenciales incorrectas.")
 
     if st.session_state.get("login_autorizado"):
         if st.button("🔒 Cerrar sesión"):
