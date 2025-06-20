@@ -79,7 +79,7 @@ if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
 
     # --- Selección de Básico y Fecha ---
-    basicos = ["PARÍS", "ROMA", "MADRID", "LONDRES", "BERLÍN", "VIENA"]  # Personalizable
+    basicos = ["SCPRABU", "SCESTE", "GMESTE", "MIESTE"]  # Personalizable
     basico = st.selectbox("Selecciona el Básico del viaje", basicos)
     fecha = st.date_input("Selecciona la Fecha del Viaje", value=date.today(), format="DD/MM/YYYY")
 
