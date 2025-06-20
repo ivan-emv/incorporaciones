@@ -61,8 +61,8 @@ if "forzar_rerun" not in st.session_state:
     st.session_state["forzar_rerun"] = False
 
 # --- REINICIO SEGURO TRAS OPERACIÓN ---
-if st.session_state.forzar_rerun:
-    st.session_state.forzar_rerun = False
+if st.session_state["forzar_rerun"]:
+    st.session_state["forzar_rerun"] = False
     st.experimental_rerun()
 
 # --- INTERFAZ PRINCIPAL ---
