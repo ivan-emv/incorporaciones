@@ -44,7 +44,7 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
     html += "</tr></thead><tbody>"
 
     for _, row in df.iterrows():
-        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - {bus}".strip()
+        asunto = f"Incorporaciones - {row['Ciudad']} - {basico} {fecha_texto} - Bus {bus}".strip()
         asunto_encoded = urllib.parse.quote(asunto)
         correos = row["Correo EMV"]
         if row["Correo Personal"]:
@@ -91,7 +91,7 @@ if pagina == "📄 Visualización":
     else:
         basico = st.selectbox("Selecciona el Básico del viaje", basicos)
         fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
-        bus = st.text_input("Bus (Ejemplo: Bus 1)")
+        bus = st.text_input("Bus (Ejemplo: 1)")
 
         df = cargar_datos()
         if df.empty:
