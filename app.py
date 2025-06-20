@@ -39,14 +39,14 @@ def cargar_basicos():
 def cargar_ciudades():
     try:
         ciudades_df = gc.open_by_key(SHEET_ID).worksheet("Ciudades").get_all_records()
-        return sorted([row["Ciudades"] for row in ciudades_df if row["Ciudades"]])
+        return sorted([row["Ciudad"] for row in ciudades_df if row["Ciudad"]])
     except:
         return []
 
 def generar_tabla_html(df, basico, fecha_texto, bus):
     html = "<table style='width:100%; border-collapse: collapse;'>"
     html += "<thead><tr style='background-color:#f0f0f0;'>"
-    for col in ["Ciudad", "Nombre de Guía", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]:
+    for col in ["Ciudad", "Nombre de Guía", "Apellido", "Correo EMV", "Correo Personal", "📧 Enviar Correo"]:
         html += f"<th style='border:1px solid #ddd; padding:8px;'>{col}</th>"
     html += "</tr></thead><tbody>"
 
@@ -61,6 +61,7 @@ def generar_tabla_html(df, basico, fecha_texto, bus):
         html += "<tr>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Ciudad']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Nombre de Guía']}</td>"
+        html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Apellido']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo EMV']}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{row['Correo Personal'] or '-'}</td>"
         html += f"<td style='border:1px solid #ddd; padding:8px;'>{link}</td>"
@@ -83,25 +84,26 @@ st.title("📋 Guías - Incorporaciones de Pasajeros")
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
 
-    basicos = cargar_basicos()
-    if not basicos:
-        st.error("No se pudieron cargar los Básicos desde la hoja 'Basicos'.")
+    df = cargar_datos()
+    if df.empty:
+        st.warning("No hay datos disponibles.")
     else:
-        basico = st.selectbox("Selecciona el Básico del viaje", basicos)
-        fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
-        bus = st.text_input("Bus (Ejemplo: 1)")
+        ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
+        ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
 
-        df = cargar_datos()
-        if df.empty:
-            st.warning("No hay datos disponibles.")
+        if ciudad_seleccionada != "TODAS":
+            df = df[df["Ciudad"] == ciudad_seleccionada]
+
+        basicos = cargar_basicos()
+        if not basicos:
+            st.error("No se pudieron cargar los Básicos desde la hoja 'Basicos'.")
         else:
-            ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
-            ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
+            basico = st.selectbox("Selecciona el Básico del viaje", basicos)
+            fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
+            bus = st.text_input("Bus (Ejemplo: 1 o 1 y 2)")
 
-            if ciudad_seleccionada != "TODAS":
-                df = df[df["Ciudad"] == ciudad_seleccionada]
-
-            html_tabla = generar_tabla_html(df, basico, fecha_texto, bus)
+            bus_texto = f"Buses {bus}" if any(sep in bus for sep in [",", "y", "/", " "]) else f"Bus {bus}"
+            html_tabla = generar_tabla_html(df, basico, fecha_texto, bus_texto)
             st.markdown(html_tabla, unsafe_allow_html=True)
 
 # --- ADMINISTRACIÓN ---
@@ -132,6 +134,7 @@ elif pagina == "🛠️ Administración":
             ciudades_disponibles = cargar_ciudades()
             ciudades_seleccionadas = st.multiselect("Selecciona Ciudad(es)", ciudades_disponibles)
             guia = st.text_input("Nombre de Guía")
+            apellido = st.text_input("Apellido")
             correo_emv = st.text_input("Correo EMV")
             correo_personal = st.text_input("Correo Personal")
             agregar = st.form_submit_button("Guardar")
@@ -141,6 +144,7 @@ elif pagina == "🛠️ Administración":
                 {
                     "Ciudad": ciudad,
                     "Nombre de Guía": guia,
+                    "Apellido": apellido,
                     "Correo EMV": correo_emv,
                     "Correo Personal": correo_personal
                 }
@@ -149,7 +153,7 @@ elif pagina == "🛠️ Administración":
             df = pd.concat([df, nuevos_registros], ignore_index=True)
             guardar_datos(df)
             st.success("Registro(s) agregado(s) correctamente.")
-            df = cargar_datos()  # Actualización inmediata
+            df = cargar_datos()
 
         st.markdown("### ✏️ Editar o eliminar registros")
         selected_row = st.selectbox(
@@ -162,6 +166,7 @@ elif pagina == "🛠️ Administración":
             row = df.loc[selected_row]
             ciudad_e = st.text_input("Ciudad", value=row["Ciudad"], key="edit_ciudad")
             guia_e = st.text_input("Nombre de Guía", value=row["Nombre de Guía"], key="edit_guia")
+            apellido_e = st.text_input("Apellido", value=row.get("Apellido", ""), key="edit_apellido")
             correo_emv_e = st.text_input("Correo EMV", value=row["Correo EMV"], key="edit_emv")
             correo_personal_e = st.text_input("Correo Personal", value=row["Correo Personal"], key="edit_pers")
 
@@ -170,6 +175,7 @@ elif pagina == "🛠️ Administración":
                 if st.button("💾 Guardar Cambios"):
                     df.at[selected_row, "Ciudad"] = ciudad_e
                     df.at[selected_row, "Nombre de Guía"] = guia_e
+                    df.at[selected_row, "Apellido"] = apellido_e
                     df.at[selected_row, "Correo EMV"] = correo_emv_e
                     df.at[selected_row, "Correo Personal"] = correo_personal_e
                     guardar_datos(df)
