@@ -57,6 +57,14 @@ def generar_tabla_html(df):
 if "login_autorizado" not in st.session_state:
     st.session_state["login_autorizado"] = False
 
+if "forzar_rerun" not in st.session_state:
+    st.session_state["forzar_rerun"] = False
+
+# --- REINICIO SEGURO TRAS OPERACIÓN ---
+if st.session_state.forzar_rerun:
+    st.session_state.forzar_rerun = False
+    st.experimental_rerun()
+
 # --- INTERFAZ PRINCIPAL ---
 st.set_page_config(page_title="Guías Incorporaciones", layout="wide")
 st.title("📋 Guías - Incorporaciones de Pasajeros")
@@ -84,7 +92,6 @@ if pagina == "📄 Visualización":
 elif pagina == "🛠️ Administración":
     st.subheader("Acceso de Administrador")
 
-    # LOGIN
     if not st.session_state["login_autorizado"]:
         with st.form("login_form"):
             usuario = st.text_input("Usuario")
@@ -93,11 +100,10 @@ elif pagina == "🛠️ Administración":
 
         if submitted and autenticar(usuario, password):
             st.session_state["login_autorizado"] = True
-            st.experimental_rerun()
+            st.session_state["forzar_rerun"] = True
         elif submitted:
             st.error("Credenciales incorrectas.")
 
-    # SI LOGIN AUTORIZADO
     if st.session_state["login_autorizado"]:
         if st.button("🔒 Cerrar sesión"):
             st.session_state["login_autorizado"] = False
@@ -123,7 +129,7 @@ elif pagina == "🛠️ Administración":
             df = pd.concat([df, nuevo_registro], ignore_index=True)
             guardar_datos(df)
             st.success("Registro agregado correctamente.")
-            st.experimental_rerun()
+            st.session_state["forzar_rerun"] = True
 
         st.markdown("### ✏️ Editar o eliminar registros")
         selected_row = st.selectbox(
@@ -148,10 +154,10 @@ elif pagina == "🛠️ Administración":
                     df.at[selected_row, "Correo Personal"] = correo_personal_e
                     guardar_datos(df)
                     st.success("Registro actualizado.")
-                    st.experimental_rerun()
+                    st.session_state["forzar_rerun"] = True
             with col2:
                 if st.button("🗑️ Eliminar Registro"):
                     df = df.drop(index=selected_row).reset_index(drop=True)
                     guardar_datos(df)
                     st.warning("Registro eliminado.")
-                    st.experimental_rerun()
+                    st.session_state["forzar_rerun"] = True
