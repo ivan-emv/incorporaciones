@@ -85,7 +85,6 @@ st.title("📋 Guías - Incorporaciones de Pasajeros")
 if pagina == "📄 Visualización":
     st.subheader("Listado de Guías por Ciudad")
 
-    # --- Cargar básicos desde la hoja "Basicos" ---
     basicos = cargar_basicos()
     if not basicos:
         st.error("No se pudieron cargar los Básicos desde la hoja 'Basicos'.")
@@ -94,21 +93,18 @@ if pagina == "📄 Visualización":
         fecha_texto = st.text_input("Fecha del viaje (formato: DD/MM)")
         bus = st.text_input("Bus (Ejemplo: Bus 1)")
 
-        if not fecha_texto or not bus:
-            st.warning("Completa todos los campos para visualizar la tabla.")
+        df = cargar_datos()
+        if df.empty:
+            st.warning("No hay datos disponibles.")
         else:
-            df = cargar_datos()
-            if df.empty:
-                st.warning("No hay datos disponibles.")
-            else:
-                ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
-                ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
+            ciudades = ["TODAS"] + sorted(df["Ciudad"].unique())
+            ciudad_seleccionada = st.selectbox("Filtrar por Ciudad:", ciudades)
 
-                if ciudad_seleccionada != "TODAS":
-                    df = df[df["Ciudad"] == ciudad_seleccionada]
+            if ciudad_seleccionada != "TODAS":
+                df = df[df["Ciudad"] == ciudad_seleccionada]
 
-                html_tabla = generar_tabla_html(df, basico, fecha_texto, bus)
-                st.markdown(html_tabla, unsafe_allow_html=True)
+            html_tabla = generar_tabla_html(df, basico, fecha_texto, bus)
+            st.markdown(html_tabla, unsafe_allow_html=True)
 
 # --- ADMINISTRACIÓN ---
 elif pagina == "🛠️ Administración":
